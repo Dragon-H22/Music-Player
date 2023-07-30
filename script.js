@@ -15,11 +15,14 @@ const showMoreBtn = wrapper.querySelector('#more-music');
 const musicList = wrapper.querySelector('.music-list');
 const hideMusicBtn = musicList.querySelector('#close');
 const ulTag = wrapper.querySelector('ul');
+const searchBar = wrapper.querySelector('#searchBar');
+const searchContainer = wrapper.querySelector('.searchContainer');
 
 
 let musicIndex = 0;
 let allMusic = [];
-
+let totalMusic = [];
+let playingMusicName = '';
 
 // window.addEventListener('load', () => {
 // });
@@ -35,6 +38,7 @@ function clacDuration(audio) {
 function loadMusic(index) {
     if (index < 0 || index >= allMusic.length || allMusic.length == 0) return;
     musicName.innerText = allMusic[index].name
+    playingMusicName = allMusic[index].name;
     mainAudio.src = URL.createObjectURL(allMusic[index]);
     musicIndex = index;
 }
@@ -49,6 +53,7 @@ function playMusic() {
     wrapper.classList.add('paused');
     playPauseBtn.querySelector('i').innerText = 'pause';
     mainAudio.play();
+    playingNow();
 }
 
 playPauseBtn.addEventListener('click', () => {
@@ -93,7 +98,7 @@ mainAudio.addEventListener('timeupdate', (e) => {
     // Currunt time of song
     let currentMin = Math.floor(currentTime / 60);
     let currentSec = Math.floor(currentTime % 60);
-    currentSec < 10 ? `0${currentSec}` : currentSec;
+    currentSec = currentSec < 10 ? `0${currentSec}` : currentSec;
     musicCurrentTime.innerText = `${currentMin}:${currentSec}`;
 });
 
@@ -151,6 +156,7 @@ mainAudio.addEventListener('ended', () => {
 })
 
 showMoreBtn.addEventListener('click', () => {
+    showSearchBar();
     musicList.classList.toggle('show');
 });
 
@@ -165,12 +171,12 @@ function generateMusicList() {
         let id = `idTest${i * 2}`;
 
         let liTag = `
-        <li li-index="${i}" onclick="clicked(this)">
+        <li li-index="${i}" musicName="${allMusic[i].name}" onclick="clicked(this)">
             <div class="row">
                 <span>${allMusic[i].name}</span>
             </div>
             <audio class="${id}" src="${URL.createObjectURL(allMusic[i])}"></audio>
-            <span id="${id}" class="audio-duration">3:40</span>
+            <span id="${id}" class="audio-duration">0:00</span>
         </li>`;
 
         ulTag.insertAdjacentHTML('beforeend', liTag);
@@ -191,13 +197,13 @@ function playingNow() {
     const allLiTag = ulTag.querySelectorAll('li');
     allLiTag.forEach(element => {
         let audioDurationTag = element.querySelector('.audio-duration');
-        if (element.classList.contains("playing")) {
-            element.classList.remove('playing');
-            audioDurationTag.innerText = audioDurationTag.getAttribute('t-duration');
-        }
-        if (element.getAttribute('li-index') == musicIndex) {
+        if (element.getAttribute('musicName') === playingMusicName) {
             element.classList.add('playing');
             audioDurationTag.innerText = "Playing";
+        }
+        else {
+            element.classList.remove('playing');
+            audioDurationTag.innerText = audioDurationTag.getAttribute('t-duration');
         }
     });
 }
@@ -210,6 +216,7 @@ function clicked(element) {
 }
 
 function uploadFiles() {
+    allMusic = []
     if (musicFileInput.files.length > 0) {
         for (let i = 0; i < musicFileInput.files.length; i++) {
             const file = musicFileInput.files[i];
@@ -218,12 +225,35 @@ function uploadFiles() {
             }
         }
     }
+    totalMusic = [...allMusic];
 }
 
 musicFileInput.addEventListener('change', () => {
     uploadFiles();
     generateMusicList();
-    loadMusic(musicIndex);
+    showSearchBar();
+    loadMusic(0);
+    pauseMusic();
+    progressBar.style.width = '0%';
     playingNow();
 });
 
+function showSearchBar() {
+    if(totalMusic.length > 0) {
+        searchContainer.style.display = 'flex';
+    }
+    else {
+        searchContainer.style.display = 'none';
+    }
+}
+
+searchBar.addEventListener('change', (e)=>{
+    let target = e.target.value.toLowerCase();
+    search(target);
+})
+
+function search(target) {
+    allMusic = totalMusic.filter(element => element.name.toLowerCase().includes(target));
+    generateMusicList();
+    playingNow();
+}
